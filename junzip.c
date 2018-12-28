@@ -283,3 +283,77 @@ jzfile_from_stdio_file(FILE *fp)
 
     return &(handle->handle);
 }
+
+/* unzip from char array in memory */
+typedef struct {
+    JZFile handle;
+    char *buf;
+	size_t size;
+	size_t position;
+} MemJZFile;
+
+static size_t
+mem_read_handle_read(JZFile *file, void *buf, size_t size)
+{
+	size_t s;
+	MemJZFile *handle = (MemJZFile *)file;
+	s = (handle->size - handle->position)>0? size: (handle->size - handle->position);
+	memcpy(buf, (handle->buf+handle->position), s);
+	handle->position += s;
+    return s;
+}
+
+static size_t
+mem_read_handle_tell(JZFile *file)
+{
+    MemJZFile *handle = (MemJZFile *)file;
+    return handle->position;
+}
+
+static int
+mem_read_handle_seek(JZFile *file, size_t offset, int whence)
+{
+    MemJZFile *handle = (MemJZFile *)file;
+	if (whence==SEEK_SET) {
+		handle->position = offset;
+	} else if (whence==SEEK_END) {
+		handle->position = handle->size + offset;
+	} else { //SEEK_CUR
+		handle->position += offset;
+	}
+    return 0;
+}
+
+static int
+mem_read_handle_error(JZFile *file)
+{
+    //MemJZFile *handle = (MemJZFile *)file;
+    //TODO: add error handling
+    return 0;
+}
+
+static void
+mem_read_handle_close(JZFile *file)
+{
+    MemJZFile *handle = (MemJZFile *)file;
+    fclose(handle->fp);
+    free(file);
+}
+
+JZFile *
+jzfile_from_mem(char *buf, size_t size)
+{
+    MemJZFile *handle = (MemJZFile *)malloc(sizeof(MemJZFile));
+
+    handle->handle.read = mem_read_handle_read;
+    handle->handle.tell = mem_read_handle_tell;
+    handle->handle.seek = mem_read_handle_seek;
+    handle->handle.error = mem_read_handle_error;
+    handle->handle.close = mem_read_handle_close;
+    handle->buf = buf;
+	handle->size = size;
+	handle->position = 0;
+
+    return &(handle->handle);
+}
+

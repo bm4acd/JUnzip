@@ -29,6 +29,9 @@ struct JZFile {
 JZFile *
 jzfile_from_stdio_file(FILE *fp);
 
+JZFile *
+jzfile_from_mem(char *buf, size_t size);
+
 typedef struct __attribute__ ((__packed__)) {
     uint32_t signature;
     uint16_t versionNeededToExtract; // unsupported
